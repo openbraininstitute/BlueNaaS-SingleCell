@@ -1,0 +1,38 @@
+name: Publish main to AWS public ECR latest
+
+# Only builds backend for now !!
+
+on:
+    push:
+      branches:
+        - main
+        - update_cicd
+
+jobs:
+  publish-to-aws-ecr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PUBLICECR_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PUBLICECR_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.PUBLICECR_REGION }}
+
+      - name: Authenticate with AWS Public ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Build
+        run: |
+          cd backend
+          docker build -t ${{ vars.PUBLICECR_URI }}:latest .
+
+      - name: Publish To AWS ECR
+        run: |
+          cd backend
+          docker push ${{ vars.PUBLICECR_URI }}:latest
